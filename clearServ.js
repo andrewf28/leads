@@ -4,6 +4,7 @@ const path = require('path');
 const util = require('util');
 const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
+require('dotenv').config();
 
 const ID = process.env.AZ_ID;
 const SECRET = process.env.AZ_SECRET;
@@ -109,4 +110,19 @@ async function uploadAndClear(dirPath) {
     }));
 }
 
-uploadAndClear(OUTPUT_PATH);
+
+
+async function uploadAndClearFile(filePath) {
+    console.log(filePath);
+    const fileExists = fs.existsSync(filePath);
+    if (!fileExists) {
+        console.log(`File does not exist: ${filePath}`);
+        return;
+    }
+    await correctHeaders(filePath);
+    await uploadFile(filePath);
+    fs.unlinkSync(filePath);
+}
+
+fileName = "/home/ubuntu/allowedKeys.csv"
+uploadAndClearFile(fileName);

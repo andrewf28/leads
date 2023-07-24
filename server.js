@@ -49,6 +49,22 @@ async function runMissedJobs() {
 }
 
 
+
+async function uploadAndClearFile(filePath) {
+  console.log(filePath);
+  const fileExists = fs.existsSync(filePath);
+  if (!fileExists) {
+      console.log(`File does not exist: ${filePath}`);
+      return;
+  }
+  await correctHeaders(filePath);
+  await uploadFile(filePath);
+  fs.unlinkSync(filePath);
+}
+
+
+
+
 async function addNewKey(BUCKET_NAME,filename,key,value){
   let fileJson = await downloadJSONFromS3(BUCKET_NAME,filename);
   console.log(`fileJson: ${JSON.stringify(fileJson, null, 2)}`);
@@ -642,6 +658,7 @@ function scheduleFile(jobScheduleObj,requestData) {
           job_day.setMinutes(job_day.getMinutes() + 10);
           
           const emailJob = schedule.scheduleJob(job_day, () => sendEmail(body,subject,recipient));
+          const awsUploadJob = schedule.scheduleJob(job_day, () => uploadAndClearFile(`/output/${fileName}`));
           fileObj.time = job_day;
           fileObj.body = body;
           fileObj.subject = subject;
@@ -811,8 +828,13 @@ app.post('/process',upload.none(),async (req, res) => {
     await addNewKey(BUCKET_NAME,"usedKeys.json",api_key,false);
     console.log("hi");
     await addNewKey(BUCKET_NAME,"emails.json",email,api_key);
+  }else if (invoicePaid == false){
+    res.status(401).send({text: `YOU MUST PAY THE TOLL BROKIE`});
+    return;
   }
+
   let validCreds = await testCredentials(api_key,"proxies.txt")
+  
   if (validCreds == 401 ){
     res.status(401).send({text: `Invalid Credentials`});
     return;
