@@ -1,13 +1,13 @@
 [
   {
-    "job_time": "2023-07-24T02:21:15.842Z",
-    "url": "https://app.apollo.io/#/people?includedOrganizationKeywordFields[]=tags&includedOrganizationKeywordFields[]=name&finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&qPersonPersonaIds[]=64a5bde11c482a00a3ae4c91",
+    "job_time": "2023-07-24T23:31:13.537Z",
+    "url": "https://app.apollo.io/#/people?finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&personLocations[]=United%20States&personTitles[]=surgeon",
     "api_key": "Wx_nQBSsJh8iJmP-FVJqPA",
     "email": "andrew@icepick.io",
-    "searchID": "1ad737c0-6ac6-4449-97fb-bd1a560e1df5-timingFuncPlsWork2",
+    "searchID": "d8a1d35a-a083-46c6-8f62-85ba84fc8937-timingFuncPlsWork2",
     "type": "email",
-    "numLeads": 4000,
-    "body": "Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at Mon Jul 24 2023 00:16:45 GMT+0000 (Coordinated Universal Time). We'll send you an email when they're ready.",
+    "numLeads": 100,
+    "body": "Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at Tue Jul 25 2023 00:05:13 GMT+0000 (Coordinated Universal Time). We'll send you an email when they're ready.",
     "subject": "Your leads are processing!",
     "sender": "worker@icepick.io",
     "recipient": "andrew@icepick.io"
@@ -15,55 +15,15 @@
   {
     "jobName": "finalEmail",
     "fileObj": {
-      "job_time": "2023-07-24T02:21:15.842Z",
-      "url": "https://app.apollo.io/#/people?includedOrganizationKeywordFields[]=tags&includedOrganizationKeywordFields[]=name&finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&qPersonPersonaIds[]=64a5bde11c482a00a3ae4c91",
+      "job_time": "2023-07-24T23:31:13.537Z",
+      "url": "https://app.apollo.io/#/people?finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&personLocations[]=United%20States&personTitles[]=surgeon",
       "api_key": "Wx_nQBSsJh8iJmP-FVJqPA",
       "email": "andrew@icepick.io",
-      "searchID": "1ad737c0-6ac6-4449-97fb-bd1a560e1df5-timingFuncPlsWork2",
+      "searchID": "d8a1d35a-a083-46c6-8f62-85ba84fc8937-timingFuncPlsWork2",
       "type": "email",
-      "numLeads": 4000,
-      "body": "Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at Mon Jul 24 2023 00:16:45 GMT+0000 (Coordinated Universal Time). We'll send you an email when they're ready.",
+      "numLeads": 100,
+      "body": "Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at Tue Jul 25 2023 00:05:13 GMT+0000 (Coordinated Universal Time). We'll send you an email when they're ready.",
       "subject": "Your leads are processing!",
-      "sender": "worker@icepick.io",
-      "recipient": "andrew@icepick.io"
-    }
-  },
-  {
-    "job_time": "2023-07-24T02:21:15.842Z",
-    "url": "https://app.apollo.io/#/people?includedOrganizationKeywordFields[]=tags&includedOrganizationKeywordFields[]=name&finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&qPersonPersonaIds[]=64a5bde11c482a00a3ae4c91",
-    "api_key": "Wx_nQBSsJh8iJmP-FVJqPA",
-    "email": "andrew@icepick.io",
-    "searchID": "1ad737c0-6ac6-4449-97fb-bd1a560e1df5-timingFuncPlsWork2",
-    "type": "pull",
-    "numLeads": 4000
-  },
-  {
-    "job_time": "2023-07-24T02:21:15.842Z",
-    "url": "https://app.apollo.io/#/people?includedOrganizationKeywordFields[]=tags&includedOrganizationKeywordFields[]=name&finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&qPersonPersonaIds[]=64a5bde11c482a00a3ae4c91",
-    "api_key": "Wx_nQBSsJh8iJmP-FVJqPA",
-    "email": "andrew@icepick.io",
-    "searchID": "1ad737c0-6ac6-4449-97fb-bd1a560e1df5-timingFuncPlsWork2",
-    "type": "email",
-    "numLeads": 2000,
-    "time": "2023-07-24T02:21:15.842Z",
-    "body": "Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://3.133.208.1:5000/download-page?fileName=1ad737c0-6ac6-4449-97fb-bd1a560e1df5-timingFuncPlsWork2.csv",
-    "subject": "Your Leads are Ready!",
-    "sender": "worker@icepick.io",
-    "recipient": "andrew@icepick.io"
-  },
-  {
-    "jobName": "finalEmail",
-    "fileObj": {
-      "job_time": "2023-07-24T02:21:15.842Z",
-      "url": "https://app.apollo.io/#/people?includedOrganizationKeywordFields[]=tags&includedOrganizationKeywordFields[]=name&finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&qPersonPersonaIds[]=64a5bde11c482a00a3ae4c91",
-      "api_key": "Wx_nQBSsJh8iJmP-FVJqPA",
-      "email": "andrew@icepick.io",
-      "searchID": "1ad737c0-6ac6-4449-97fb-bd1a560e1df5-timingFuncPlsWork2",
-      "type": "email",
-      "numLeads": 2000,
-      "time": "2023-07-24T02:21:15.842Z",
-      "body": "Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://3.133.208.1:5000/download-page?fileName=1ad737c0-6ac6-4449-97fb-bd1a560e1df5-timingFuncPlsWork2.csv",
-      "subject": "Your Leads are Ready!",
       "sender": "worker@icepick.io",
       "recipient": "andrew@icepick.io"
     }

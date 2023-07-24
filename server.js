@@ -465,11 +465,13 @@ async function testCredentials(api_key, prxFile) {
 
 
 function apolloRequestData(url, api_key) {
-  console.log(`${url} is url`);
-
+  // console.log(`${url} is url`);
+  const decodedUrl = decodeURIComponent(url);
+  url = decodedUrl.replace(/%5B/g, '[').replace(/%5D/g, ']');
   let params = url.split("?")[1].split("&");
 
-  console.log(params)
+
+  // console.log(params)
   let reqData = {};
   reqData.api_key = api_key;
   revRangeArgs = {};
@@ -479,6 +481,8 @@ function apolloRequestData(url, api_key) {
           let paramArg = i.split("=")[1].replace(/%20/g," ");
           if (reqData.hasOwnProperty(paramName)){
               reqData[paramName].push(paramArg);
+              // reqData[paramName] = [paramArg];
+
           }else{
               reqData[paramName] = [paramArg];
           }
@@ -492,6 +496,7 @@ function apolloRequestData(url, api_key) {
       }
       
   }
+  console.log(`REQ DATA: ${JSON.stringify(reqData, null, 2)}`);
   return reqData;
   
 }
@@ -618,7 +623,7 @@ function scheduleFile(jobScheduleObj,requestData) {
           console.log("job scheduled");
           let currReqsLeft = jobScheduleObj.reqsLeft;
           fileObj.numLeads = currReqsLeft*10;
-          const job = schedule.scheduleJob(`job_${jobScheduleObj.currJob}`, job_day, () => getLeads(requestData.url, requestData.api_key, currReqsLeft*10, requestData.email,requestData.searchID));
+          const job = schedule.scheduleJob(`job_${jobScheduleObj.currJob}`, job_day, () => getLeadsFinal(requestData.url, requestData.api_key, currReqsLeft*10, requestData.email,requestData.searchID));
           jobObjects.push({jobName: `job_${jobScheduleObj.currJob}`, job}); // Adding the job to the array
 
           
@@ -629,7 +634,7 @@ function scheduleFile(jobScheduleObj,requestData) {
         if (jobScheduleObj.currJob == 0){
           let finalDate = new Date(job_day);
           finalDate.setMinutes(jobScheduleObj.times[jobScheduleObj.batches % 5].hour);
-          finalDate.setMinutes(jobScheduleObj.times[jobScheduleObj.batches % 5].minute);
+          finalDate.setMinutes(jobScheduleObj.times[jobScheduleObj.batches % 5].minute + 30);
 
           subject = "Your leads are processing!";
           body = `Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at ${finalDate}. We'll send you an email when they're ready.`;
@@ -647,31 +652,7 @@ function scheduleFile(jobScheduleObj,requestData) {
           fileJobObjs.push({jobName: `finalEmail`, fileObj});
           // console.log("TODO: send email to user that leads are processing with html that leads them to icepick.io include the time they'll finish")
         }
-        if(jobScheduleObj.currJob == jobScheduleObj.batches - 1){
-          
-          
-          let fileName = requestData.searchID + ".csv";
-          
-          subject = "Your Leads are Ready!";
-          body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://ApolloPullsAutoScaler-1-1638492219.us-east-2.elb.amazonaws.com/download-page?fileName=${fileName}`;
-          sender = "worker@icepick.io";
-          recipient = requestData.email;
-          job_day.setMinutes(job_day.getMinutes() + 10);
-          
-          const emailJob = schedule.scheduleJob(job_day, () => sendEmail(body,subject,recipient));
-          const awsUploadJob = schedule.scheduleJob(job_day, () => uploadAndClearFile(`/output/${fileName}`));
-          fileObj.time = job_day;
-          fileObj.body = body;
-          fileObj.subject = subject;
-          fileObj.sender = sender;
-          fileObj.recipient = recipient;
-
-          
-          fileObj.type = "email";
-          fileJobObjs.push({jobName: `finalEmail`, fileObj});
-          
-          
-        }
+        
         
         
         printReadableDate(job_day);
@@ -1028,6 +1009,117 @@ async function getLeads(url,api_key, numLeads,email,searchID){
   }
 
 }
+
+
+
+
+async function getLeadsFinal(url,api_key, numLeads,email,searchID){
+  console.log(`Pulling ${numLeads} leads from ${url}`);
+  // console.log(searchID);
+  let proxyList = await readFileAsListOfLists("proxies.txt");
+  // console.log(proxyList);
+  let pages = Math.ceil(numLeads/10);
+  let currProx = Math.floor(Math.random() * proxyList.length);
+  console.log(pages)
+  for (let i = 1; i <= pages; i++) {
+      console.log(`Pulling page ${i} of ${pages}`)
+      if(i % 100 == 0 && i != 0){
+          currProx = Math.floor(Math.random() * proxyList.length);
+          console.log(`Switching proxies to ${proxyList[currProx][0]} | ${i} pages pulled`)
+      }
+      let data = await req('https://api.apollo.io/v1/mixed_people/search?',proxyList[currProx],apolloRequestData(url,api_key,i),i);
+      // console.log(`people: ${data.people}`);
+      if (Object.keys(data.people).length === 0) {
+        console.log(`No more leads`);
+        let fileName = searchID + ".csv";
+        let subject = "Enjoy your free trial leads!";
+        let body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://ApolloPullsAutoScaler-1-1638492219.us-east-2.elb.amazonaws.com/download-page?fileName=${fileName}`;
+        let sender = "worker@icepick.io";
+        let recipient = email;
+        
+        sendEmail(body, subject, recipient);
+        return;
+      }
+      if (data == null) {
+        console.log(`Too many reqs`);
+        return;
+      }
+      // console.log(data);
+      // console.log(data.people);
+      await sleep(2000);
+      const fields = [
+        
+        // 'industry',
+        'first_name',
+        'last_name',
+        'name',
+        'linkedin_url',
+        'title',
+        'email_status',
+        'photo_url',
+        'twitter_url',
+        'github_url',
+        'facebook_url',
+        'extrapolated_email_confidence',
+        'headline',
+        'email',
+        'organization_id',
+        // 'employment_history',
+        'State',
+        'City',
+        'country',
+        // 'organization',
+        // 'phone_numbers',
+        'organization_Name',
+        'Website',
+        'companyLinkedin',
+        'id',
+
+        // 'intent_strength',
+        // 'show_intent',
+        // 'revealed_for_current_team'
+      ];  
+      // console.log(data.people[0].last_name);
+      for (let i = 0; i < data.people.length; i++) {
+        if (data.people[i].organization) {
+            data.people[i].organization_Name = data.people[i].organization.name || "N/A";
+            data.people[i].Website = data.people[i].organization.website_url || "N/A";
+            data.people[i].companyLinkedin = data.people[i].organization.linkedin_url || "N/A";
+        } else {
+            data.people[i].organization_Name = "N/A";
+            data.people[i].Website = "N/A";
+            data.people[i].companyLinkedin = "N/A";
+        }
+        
+        data.people[i].State = data.people[i].state || "N/A";
+        data.people[i].City = data.people[i].city || "N/A";
+      }
+    
+      
+      const opts = { fields };
+
+      const startingPage = getValueFromCSV('processing_files/personas.csv',searchID);
+      try {
+        let csv = json2csv(data.people, opts);
+        
+
+        fs.appendFileSync(`output/${searchID}.csv`, csv);
+        console.log('File saved successfully!');
+      } catch (err) {
+          console.error(err);
+      }
+      updateCSVFile('processing_files/personas.csv', searchID,startingPage + i);
+
+  }
+  let fileName = searchID + ".csv";
+  subject = "Your Leads are Ready!";
+  body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://ApolloPullsAutoScaler-1-1638492219.us-east-2.elb.amazonaws.com/download-page?fileName=${fileName}`;
+  
+  sendEmail(body,subject,email);
+  uploadAndClearFile(`./output/${searchID}.csv`);
+
+}
+
 
 
 
