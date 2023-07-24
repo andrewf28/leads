@@ -551,7 +551,7 @@ async function trialPull(requestData) {
   
   let fileName = requestData.searchID + ".csv";
   let subject = "Enjoy your free trial leads!";
-  let body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://3.133.208.1:5000/download-page?fileName=${fileName}`;
+  let body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://ApolloPullsAutoScaler-1-1638492219.us-east-2.elb.amazonaws.com/download-page?fileName=${fileName}`;
   let sender = "worker@icepick.io";
   let recipient = requestData.email;
   
@@ -653,7 +653,7 @@ function scheduleFile(jobScheduleObj,requestData) {
           let fileName = requestData.searchID + ".csv";
           
           subject = "Your Leads are Ready!";
-          body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://3.133.208.1:5000/download-page?fileName=${fileName}`;
+          body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://ApolloPullsAutoScaler-1-1638492219.us-east-2.elb.amazonaws.com/download-page?fileName=${fileName}`;
           sender = "worker@icepick.io";
           recipient = requestData.email;
           job_day.setMinutes(job_day.getMinutes() + 10);
@@ -948,7 +948,7 @@ async function getLeads(url,api_key, numLeads,email,searchID){
         console.log(`No more leads`);
         let fileName = searchID + ".csv";
         let subject = "Enjoy your free trial leads!";
-        let body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://3.133.208.1:5000/download-page?fileName=${fileName}`;
+        let body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://ApolloPullsAutoScaler-1-1638492219.us-east-2.elb.amazonaws.com/download-page?fileName=${fileName}`;
         let sender = "worker@icepick.io";
         let recipient = email;
         
