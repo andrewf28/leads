@@ -16,6 +16,7 @@ const json2csv = require('json2csv').parse;
 const util = require('util');
 const AWS = require('aws-sdk');
 require('dotenv').config();
+const nodemailer = require('nodemailer');
 
 
 
@@ -38,6 +39,14 @@ const s3 = new AWS.S3({
     accessKeyId: ID,
     secretAccessKey: SECRET
 });
+
+async function appendJobToJsonFile(path, newJsonObj) {
+  console.log("TODO: append job to json file");
+}
+
+async function runMissedJobs() {
+  console.log("TODO: run missed jobs and knock the ones that have either been ran already or ");
+}
 
 
 async function addNewKey(BUCKET_NAME,filename,key,value){
@@ -470,22 +479,56 @@ function apolloRequestData(url, api_key) {
   return reqData;
   
 }
-function sendEmail(body, subject, recipient, sender) {
-  const msg = {
-    to: recipient,
-    from: sender,
-    subject: subject,
-    text: body
-  };
 
-  sgMail.send(msg)
-    .then(() => {
-      console.log("Email sent");
-    })
-    .catch((error) => {
-      console.error("Error sending email:", error);
-    });
+
+
+async function sendEmail(text,subject,to) {
+  // create reusable transporter object using the default SMTP transport
+  let transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com", // replace with your email provider's SMTP server
+      port: 587,
+      secure: false, // true for 465, false for other ports
+      auth: {
+          user: process.env.WORKER_ID, // replace with your email address
+          pass: process.env.WORKER_PASS  // replace with your email password
+      }
+  });
+
+  // send mail with defined transport object
+  let info = await transporter.sendMail({
+      from: '"The Lead Man" <sender@example.com>', // sender address
+      to: to, // list of receivers
+      subject: subject, // Subject line
+      text: text, // plain text body
+      //html: "<b>Hello world?</b>", // html body, if needed
+  });
+
+  console.log("Message sent: %s", info.messageId);
 }
+
+
+
+
+
+
+
+
+// function sendEmail(body, subject, recipient, sender) {
+//   const msg = {
+//     to: recipient,
+//     from: sender,
+//     subject: subject,
+//     text: body
+//   };
+
+//   sgMail.send(msg)
+//     .then(() => {
+//       console.log("Email sent");
+//     })
+//     .catch((error) => {
+//       console.error("Error sending email:", error);
+//     });
+// }
 
 async function trialPull(requestData) {
   await getLeads(requestData.url, requestData.api_key, 1000, requestData.email,requestData.searchID);
@@ -496,7 +539,7 @@ async function trialPull(requestData) {
   let sender = "worker@icepick.io";
   let recipient = requestData.email;
   
-  sendEmail(body, subject, recipient, sender);
+  sendEmail(body, subject, recipient);
   console.log(fileName);
 }
 
@@ -575,7 +618,7 @@ function scheduleFile(jobScheduleObj,requestData) {
           body = `Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at ${finalDate}. We'll send you an email when they're ready.`;
           sender = "worker@icepick.io";
           recipient = requestData.email;
-          sendEmail(body,subject,recipient,sender);
+          sendEmail(body,subject,recipient);
           fileObj.job_time = job_day;
           fileObj.body = body;
           fileObj.subject = subject;
@@ -598,7 +641,7 @@ function scheduleFile(jobScheduleObj,requestData) {
           recipient = requestData.email;
           job_day.setMinutes(job_day.getMinutes() + 10);
           
-          const emailJob = schedule.scheduleJob(job_day, () => sendEmail(body,subject,recipient,sender));
+          const emailJob = schedule.scheduleJob(job_day, () => sendEmail(body,subject,recipient));
           fileObj.time = job_day;
           fileObj.body = body;
           fileObj.subject = subject;
@@ -886,7 +929,7 @@ async function getLeads(url,api_key, numLeads,email,searchID){
         let sender = "worker@icepick.io";
         let recipient = email;
         
-        sendEmail(body, subject, recipient, sender);
+        sendEmail(body, subject, recipient);
         return;
       }
       if (data == null) {
