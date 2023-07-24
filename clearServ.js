@@ -124,5 +124,5 @@ async function uploadAndClearFile(filePath) {
     fs.unlinkSync(filePath);
 }
 
-fileName = "/home/ubuntu/allowedKeys.csv"
+fileName = "./output/0a0cfd3e-5da4-4fec-8e26-64f2afd5a71a-timingFuncPlsWork2.csv"
 uploadAndClearFile(fileName);

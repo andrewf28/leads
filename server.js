@@ -557,6 +557,7 @@ async function trialPull(requestData) {
   
   sendEmail(body, subject, recipient);
   console.log(fileName);
+  uploadAndClearFile(`./output/${fileName}`);
 }
 
 
