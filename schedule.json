@@ -1,13 +1,13 @@
 [
   {
-    "job_time": "2023-07-28T04:06:19.035Z",
+    "job_time": "2023-07-28T20:24:23.771Z",
     "url": "https://app.apollo.io/#/people?includedOrganizationKeywordFields[]=tags&includedOrganizationKeywordFields[]=name&finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&qPersonPersonaIds[]=64a5bde11c482a00a3ae4c91",
     "api_key": "Wx_nQBSsJh8iJmP-FVJqPA",
     "email": "andrew@icepick.io",
-    "searchID": "5376608e-ae6d-49c7-9539-9c9fd2790ba5-HeaderTest1",
+    "searchID": "e4168ffe-ba9d-4cbd-af81-1f1a5cceaf2c-testingFunc",
     "type": "email",
-    "numLeads": 20,
-    "body": "Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at Fri Jul 28 2023 04:41:19 GMT+0000 (Coordinated Universal Time). We'll send you an email when they're ready.",
+    "numLeads": 1000,
+    "body": "Hi there,\n\nThanks for trying out our service. Your leads are currently processing - we'll send you an email when they're finished",
     "subject": "Your leads are processing!",
     "sender": "worker@icepick.io",
     "recipient": "andrew@icepick.io"
@@ -15,14 +15,14 @@
   {
     "jobName": "finalEmail",
     "fileObj": {
-      "job_time": "2023-07-28T04:06:19.035Z",
+      "job_time": "2023-07-28T20:24:23.771Z",
       "url": "https://app.apollo.io/#/people?includedOrganizationKeywordFields[]=tags&includedOrganizationKeywordFields[]=name&finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&qPersonPersonaIds[]=64a5bde11c482a00a3ae4c91",
       "api_key": "Wx_nQBSsJh8iJmP-FVJqPA",
       "email": "andrew@icepick.io",
-      "searchID": "5376608e-ae6d-49c7-9539-9c9fd2790ba5-HeaderTest1",
+      "searchID": "e4168ffe-ba9d-4cbd-af81-1f1a5cceaf2c-testingFunc",
       "type": "email",
-      "numLeads": 20,
-      "body": "Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at Fri Jul 28 2023 04:41:19 GMT+0000 (Coordinated Universal Time). We'll send you an email when they're ready.",
+      "numLeads": 1000,
+      "body": "Hi there,\n\nThanks for trying out our service. Your leads are currently processing - we'll send you an email when they're finished",
       "subject": "Your leads are processing!",
       "sender": "worker@icepick.io",
       "recipient": "andrew@icepick.io"

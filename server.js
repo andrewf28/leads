@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const { spawn } = require('child_process');
 const { exec } = require('child_process');
-const sleep = require('util').promisify(setTimeout);
+// const sleep = require('util').promisify(setTimeout);
 const multer = require('multer');
 const upload = multer();
 const { v4: uuidv4 } = require('uuid');
@@ -86,24 +86,33 @@ async function trimColumns(fileName) {
   });
 }
 
-
-async function getCompanyName(company) {
-  
-
+async function getCompanyName(company, maxRetries = 3, delay = 1000) {
   const configuration = new Configuration({
     apiKey: process.env.OPENAI_KEY,
   });
   const openai = new OpenAIApi(configuration);
 
-  const chatCompletion = await openai.createChatCompletion({
-    model: "gpt-3.5-turbo",
-    messages: [{role: "user", content: `Give me a formatted company name for ${company}, no legal abbreviations or descriptors of the service, just the unique part of name, normal casing no all uppercase.`}],
-    temperature:0.0
-  });
-  return chatCompletion.data.choices[0].message.content;
-  console.log(chatCompletion.data.choices[0].message);
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const chatCompletion = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo",
+        messages: [{
+          role: "user", 
+          content: `Give me a formatted company name for ${company}, no legal abbreviations or descriptors of the service, just the unique part of name, normal casing no all uppercase.`
+        }],
+        temperature: 0.0
+      });
+      return chatCompletion.data.choices[0].message.content;
+    } catch (error) {
+      if (error.response && error.response.status === 503 && i < maxRetries - 1) {
+        console.log(`Request failed with status code 503. Retrying after ${delay}ms...`);
+        await sleep(delay);
+      } else {
+        throw error;
+      }
+    }
+  }
 }
-
 
 const ID = process.env.AZ_ID;
 const SECRET = process.env.AZ_SECRET;
@@ -654,6 +663,9 @@ const sendEmail = async (text, subject, to) => {
 
 
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 
 
@@ -931,7 +943,7 @@ function sendText(subject,text) {
 
 app.get('/', (req, res) => {
   res.send('Hello, world!');
-  console.log("Req made to serv")
+  // console.log("Req made to serv")
 });
 
 
@@ -1123,7 +1135,7 @@ async function getLeads(url,api_key, numLeads,email,searchID){
         'Website',
         'companyLinkedin',
         'id',
-        'formattedCompany',
+        // 'formattedCompany',
         "-"
         
 
@@ -1142,7 +1154,7 @@ async function getLeads(url,api_key, numLeads,email,searchID){
             data.people[i].organization_Name = data.people[i].organization.name || "N/A";
             data.people[i].Website = data.people[i].organization.website_url || "N/A";
             data.people[i].companyLinkedin = data.people[i].organization.linkedin_url || "N/A";
-            data.people[i].formattedCompany= await getCompanyName(data.people[i].organization_Name);
+            // data.people[i].formattedCompany= await getCompanyName(data.people[i].organization_Name);
         } else {
             data.people[i].organization_Name = "N/A";
             data.people[i].Website = "N/A";
