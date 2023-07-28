@@ -60,25 +60,31 @@ async function trimColumns(fileName) {
               results.push(newRow);
           })
           .on('end', async () => {
+              const tempFileName = `${path.parse(fileName).name}-temp.csv`;
               const csvWriter = createCsvWriter({
-                  path: `${path.parse(fileName).name}-temp.csv`,
+                  path: tempFileName,
                   header: headers.map((header) => ({id: header, title: header})),
               });
               
               await csvWriter.writeRecords(results);
               
               // Replace original file with the new one
-              fse.move(`${path.parse(fileName).name}-temp.csv`, fileName, { overwrite: true }, err => {
+              fs.unlink(fileName, err => {
                   if (err) {
                       reject(err);
                   } else {
-                      resolve('The CSV file was written successfully');
+                      fs.rename(tempFileName, fileName, err => {
+                          if (err) {
+                              reject(err);
+                          } else {
+                              resolve('The CSV file was written successfully');
+                          }
+                      });
                   }
               });
           });
   });
 }
-
 
 
 async function getCompanyName(company) {
