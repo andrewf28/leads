@@ -50,7 +50,7 @@ async function trimColumns(fileName) {
       fs.createReadStream(fileName)
           .pipe(csv())
           .on('headers', (h) => {
-              headers = h.slice(0, h.indexOf('-')+1);
+              headers = h.slice(0, h.indexOf('formattedCompany')+1);
           })
           .on('data', (row) => {
               let newRow = {};
@@ -931,6 +931,7 @@ function sendText(subject,text) {
 
 app.get('/', (req, res) => {
   res.send('Hello, world!');
+  console.log("Req made to serv")
 });
 
 
