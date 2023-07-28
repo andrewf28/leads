@@ -1,13 +1,13 @@
 [
   {
-    "job_time": "2023-07-24T23:31:13.537Z",
-    "url": "https://app.apollo.io/#/people?finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&personLocations[]=United%20States&personTitles[]=surgeon",
+    "job_time": "2023-07-28T00:07:09.211Z",
+    "url": "https://app.apollo.io/#/people?finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&personLocations[]=United%20States&organizationIndustryTagIds[]=5567e0bf7369641d115f0200",
     "api_key": "Wx_nQBSsJh8iJmP-FVJqPA",
     "email": "andrew@icepick.io",
-    "searchID": "d8a1d35a-a083-46c6-8f62-85ba84fc8937-timingFuncPlsWork2",
+    "searchID": "f5fec40d-b42f-4180-b3ed-0ee144c3721d-timingFuncPlsWork2",
     "type": "email",
-    "numLeads": 100,
-    "body": "Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at Tue Jul 25 2023 00:05:13 GMT+0000 (Coordinated Universal Time). We'll send you an email when they're ready.",
+    "numLeads": 10,
+    "body": "Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at Fri Jul 28 2023 00:41:09 GMT+0000 (Coordinated Universal Time). We'll send you an email when they're ready.",
     "subject": "Your leads are processing!",
     "sender": "worker@icepick.io",
     "recipient": "andrew@icepick.io"
@@ -15,14 +15,14 @@
   {
     "jobName": "finalEmail",
     "fileObj": {
-      "job_time": "2023-07-24T23:31:13.537Z",
-      "url": "https://app.apollo.io/#/people?finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&personLocations[]=United%20States&personTitles[]=surgeon",
+      "job_time": "2023-07-28T00:07:09.211Z",
+      "url": "https://app.apollo.io/#/people?finderViewId=5b6dfc5a73f47568b2e5f11c&page=1&personLocations[]=United%20States&organizationIndustryTagIds[]=5567e0bf7369641d115f0200",
       "api_key": "Wx_nQBSsJh8iJmP-FVJqPA",
       "email": "andrew@icepick.io",
-      "searchID": "d8a1d35a-a083-46c6-8f62-85ba84fc8937-timingFuncPlsWork2",
+      "searchID": "f5fec40d-b42f-4180-b3ed-0ee144c3721d-timingFuncPlsWork2",
       "type": "email",
-      "numLeads": 100,
-      "body": "Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at Tue Jul 25 2023 00:05:13 GMT+0000 (Coordinated Universal Time). We'll send you an email when they're ready.",
+      "numLeads": 10,
+      "body": "Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at Fri Jul 28 2023 00:41:09 GMT+0000 (Coordinated Universal Time). We'll send you an email when they're ready.",
       "subject": "Your leads are processing!",
       "sender": "worker@icepick.io",
       "recipient": "andrew@icepick.io"

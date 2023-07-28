@@ -28,6 +28,25 @@ const sgMail = require("@sendgrid/mail");
 const sgKey = process.env.SG_KEY;
 sgMail.setApiKey(sgKey);
 console.log(`sgKey = ${sgKey}`)
+const { Configuration, OpenAIApi } = require("openai");
+
+
+async function getCompanyName(company) {
+  
+
+  const configuration = new Configuration({
+    apiKey: process.env.OPENAI_KEY,
+  });
+  const openai = new OpenAIApi(configuration);
+
+  const chatCompletion = await openai.createChatCompletion({
+    model: "gpt-3.5-turbo",
+    messages: [{role: "user", content: `Give me a formatted company name for ${company}, no legal abbreviations or descriptors of the service, just the unique part of name, normal casing no all uppercase.`}],
+    temperature:0.0
+  });
+  return chatCompletion.data.choices[0].message.content;
+  console.log(chatCompletion.data.choices[0].message);
+}
 
 
 const ID = process.env.AZ_ID;
@@ -39,6 +58,8 @@ const s3 = new AWS.S3({
     accessKeyId: ID,
     secretAccessKey: SECRET
 });
+
+
 
 async function appendJobToJsonFile(path, newJsonObj) {
   console.log("TODO: append job to json file");
@@ -781,6 +802,30 @@ function generateUniqueID() {
 }
 
 
+function sendText(subject,text) {
+  var transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+          user: process.env.WORKER_ID,
+          pass: process.env.WORKER_PASS
+      }
+  });
+
+  const mailOptions = {
+    from: process.env.WORKER_ID, // sender address
+    to: process.env.DEV_NUM, // list of receivers
+    // subject: subject, // Subject line
+    body: text// Plain text body
+  };
+
+  transporter.sendMail(mailOptions, function (err, info) {
+    if(err)
+      console.log(err)
+    else
+      console.log(info);
+  });
+}
+
 app.get('/', (req, res) => {
   res.send('Hello, world!');
   console.log("Req made to serv")
@@ -797,6 +842,11 @@ app.post('/process',upload.none(),async (req, res) => {
   numLeads = Math.ceil(numLeads / 10) * 10;
   
   let invoicePaid;
+  sendText("New Request",`User ${email} running a search for ${numLeads} Leads`)
+  sendEmail("New Request",`User ${email} running a search for ${numLeads} Leads`,"NEW REQUEST ON LEADPULL","andrew@icepick.io");
+  sendEmail("New Request",`User ${email} running a search for ${numLeads} Leads`,"NEW REQUEST ON LEADPULL","ryeem@icepick.io");
+
+  
   try {
     invoicePaid = await downloadJSONFromS3(BUCKET_NAME,"usedKeys.json");
     invoicePaid = invoicePaid[api_key];
@@ -970,6 +1020,7 @@ async function getLeads(url,api_key, numLeads,email,searchID){
         'Website',
         'companyLinkedin',
         'id',
+        'formattedCompany'
 
         // 'intent_strength',
         // 'show_intent',
@@ -977,10 +1028,12 @@ async function getLeads(url,api_key, numLeads,email,searchID){
       ];  
       // console.log(data.people[0].last_name);
       for (let i = 0; i < data.people.length; i++) {
+        
         if (data.people[i].organization) {
             data.people[i].organization_Name = data.people[i].organization.name || "N/A";
             data.people[i].Website = data.people[i].organization.website_url || "N/A";
             data.people[i].companyLinkedin = data.people[i].organization.linkedin_url || "N/A";
+            data.people[i].formattedCompany= await getCompanyName(data.people[i].organization_Name);
         } else {
             data.people[i].organization_Name = "N/A";
             data.people[i].Website = "N/A";
@@ -1074,6 +1127,7 @@ async function getLeadsFinal(url,api_key, numLeads,email,searchID){
         'Website',
         'companyLinkedin',
         'id',
+        'formattedCompany'
 
         // 'intent_strength',
         // 'show_intent',
@@ -1081,10 +1135,12 @@ async function getLeadsFinal(url,api_key, numLeads,email,searchID){
       ];  
       // console.log(data.people[0].last_name);
       for (let i = 0; i < data.people.length; i++) {
+        
         if (data.people[i].organization) {
             data.people[i].organization_Name = data.people[i].organization.name || "N/A";
             data.people[i].Website = data.people[i].organization.website_url || "N/A";
             data.people[i].companyLinkedin = data.people[i].organization.linkedin_url || "N/A";
+            data.people[i].formattedCompany= await getCompanyName(data.people[i].organization_Name);
         } else {
             data.people[i].organization_Name = "N/A";
             data.people[i].Website = "N/A";
@@ -1094,6 +1150,9 @@ async function getLeadsFinal(url,api_key, numLeads,email,searchID){
         data.people[i].State = data.people[i].state || "N/A";
         data.people[i].City = data.people[i].city || "N/A";
       }
+      const x = 1;
+      x = 2;
+
     
       
       const opts = { fields };
@@ -1120,8 +1179,12 @@ async function getLeadsFinal(url,api_key, numLeads,email,searchID){
 
 }
 
-
-
+process.on('uncaughtException', function(err) {
+  console.log('Caught exception: ', err);
+  console.log('Stack trace: ', err.stack);  // This line added
+  sendText(`ERROR ON SERV`,`Caught exception: ${err}, Stack: ${err.stack}`);
+  sendEmail(`ERROR ON SERV`,`Caught exception: ${err}, Stack: ${err.stack}`,"SERVER ERROR","andrew@icepick.io");
+});
 
 
 
