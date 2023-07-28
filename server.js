@@ -931,7 +931,6 @@ function sendText(subject,text) {
 
 app.get('/', (req, res) => {
   res.send('Hello, world!');
-  console.log("Req made to serv")
 });
 
 
