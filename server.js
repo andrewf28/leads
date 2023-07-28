@@ -760,7 +760,7 @@ function scheduleFile(jobScheduleObj,requestData) {
           finalDate.setMinutes(jobScheduleObj.times[jobScheduleObj.batches % 5].minute + 30);
 
           subject = "Your leads are processing!";
-          body = `Hi there,\n\nThanks for trying out our service. Your leads are processing and will be ready at ${finalDate}. We'll send you an email when they're ready.`;
+          body = `Hi there,\n\nThanks for trying out our service. Your leads are currently processing - we'll send you an email when they're finished`;
           sender = "worker@icepick.io";
           recipient = requestData.email;
           sendEmail(body,subject,recipient);
