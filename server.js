@@ -731,7 +731,7 @@ function scheduleFile(jobScheduleObj,requestData) {
 
         
         
-        if (jobScheduleObj.reqsLeft >= 400){
+        if (jobScheduleObj.reqsLeft > 400){
           fileObj.numLeads =  4000;
           
           
@@ -762,6 +762,7 @@ function scheduleFile(jobScheduleObj,requestData) {
           subject = "Your leads are processing!";
           body = `Hi there,\n\nThanks for trying out our service. Your leads are currently processing - we'll send you an email when they're finished`;
           sender = "worker@icepick.io";
+          console.log(requestData.email);
           recipient = requestData.email;
           sendEmail(body,subject,recipient);
           fileObj.job_time = job_day;
