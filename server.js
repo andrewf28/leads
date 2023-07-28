@@ -940,7 +940,7 @@ app.post('/process',upload.none(),async (req, res) => {
   let invoicePaid;
   // sendText("New Request",`User ${email} running a search for ${numLeads} Leads`)
   sendEmail(`User ${email} running a search for ${numLeads} Leads`,"NEW REQUEST ON LEADPULL","andrew@icepick.io");
-  // sendEmail(`User ${email} running a search for ${numLeads} Leads`,"NEW REQUEST ON LEADPULL","ryeem@icepick.io");
+  sendEmail(`User ${email} running a search for ${numLeads} Leads`,"NEW REQUEST ON LEADPULL","ryeem@icepick.io");
 
   
   try {
