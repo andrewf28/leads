@@ -523,31 +523,38 @@ function apolloRequestData(url, api_key) {
 }
 
 
+let transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com", // replace with your email provider's SMTP server
+  port: 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+      user: process.env.WORKER_ID, // replace with your email address
+      pass: process.env.WORKER_PASS  // replace with your email password
+  }
+});
 
-async function sendEmail(text,subject,to) {
-  // create reusable transporter object using the default SMTP transport
-  let transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com", // replace with your email provider's SMTP server
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-          user: process.env.WORKER_ID, // replace with your email address
-          pass: process.env.WORKER_PASS  // replace with your email password
+
+
+
+const sendEmail = async (text, subject, to) => {
+  const msg = {
+      to: to, // Change to your recipient
+      from: 'worker@icepick.io', // Change to your verified sender
+      subject: subject,
+      text: text,
+      // html: html,
+  };
+
+  try {
+      await sgMail.send(msg);
+      console.log('Email sent');
+  } catch (error) {
+      console.error(error);
+      if (error.response) {
+          console.error(error.response.body)
       }
-  });
-
-  // send mail with defined transport object
-  let info = await transporter.sendMail({
-      from: '"The Lead Man" <sender@example.com>', // sender address
-      to: to, // list of receivers
-      subject: subject, // Subject line
-      text: text, // plain text body
-      //html: "<b>Hello world?</b>", // html body, if needed
-  });
-
-  console.log("Message sent: %s", info.messageId);
-}
-
+  }
+};
 
 
 
@@ -800,21 +807,21 @@ function generateUniqueID() {
   const timestamp = new Date().getTime();
   return timestamp.toString();
 }
-
+// var transporter = nodemailer.createTransport({
+//   service: 'gmail',
+//   auth: {
+//           user: process.env.WORKER_ID,
+//           pass: process.env.WORKER_PASS
+//       }
+//   });
 
 function sendText(subject,text) {
-  var transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-          user: process.env.WORKER_ID,
-          pass: process.env.WORKER_PASS
-      }
-  });
+  
 
   const mailOptions = {
     from: process.env.WORKER_ID, // sender address
     to: process.env.DEV_NUM, // list of receivers
-    // subject: subject, // Subject line
+    subject: subject, // Subject line
     body: text// Plain text body
   };
 
@@ -842,9 +849,9 @@ app.post('/process',upload.none(),async (req, res) => {
   numLeads = Math.ceil(numLeads / 10) * 10;
   
   let invoicePaid;
-  sendText("New Request",`User ${email} running a search for ${numLeads} Leads`)
-  sendEmail("New Request",`User ${email} running a search for ${numLeads} Leads`,"NEW REQUEST ON LEADPULL","andrew@icepick.io");
-  sendEmail("New Request",`User ${email} running a search for ${numLeads} Leads`,"NEW REQUEST ON LEADPULL","ryeem@icepick.io");
+  // sendText("New Request",`User ${email} running a search for ${numLeads} Leads`)
+  sendEmail(`User ${email} running a search for ${numLeads} Leads`,"NEW REQUEST ON LEADPULL","andrew@icepick.io");
+  // sendEmail(`User ${email} running a search for ${numLeads} Leads`,"NEW REQUEST ON LEADPULL","ryeem@icepick.io");
 
   
   try {
@@ -1150,8 +1157,7 @@ async function getLeadsFinal(url,api_key, numLeads,email,searchID){
         data.people[i].State = data.people[i].state || "N/A";
         data.people[i].City = data.people[i].city || "N/A";
       }
-      const x = 1;
-      x = 2;
+      
 
     
       
@@ -1182,8 +1188,8 @@ async function getLeadsFinal(url,api_key, numLeads,email,searchID){
 process.on('uncaughtException', function(err) {
   console.log('Caught exception: ', err);
   console.log('Stack trace: ', err.stack);  // This line added
-  sendText(`ERROR ON SERV`,`Caught exception: ${err}, Stack: ${err.stack}`);
-  sendEmail(`ERROR ON SERV`,`Caught exception: ${err}, Stack: ${err.stack}`,"SERVER ERROR","andrew@icepick.io");
+  // sendText(`ERROR ON SERV`,`Caught exception: ${err}, Stack: ${err.stack}`);
+  sendEmail(`Caught exception: ${err}, Stack: ${err.stack}`,"SERVER ERROR","andrew@icepick.io");
 });
 
 
