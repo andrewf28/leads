@@ -6,6 +6,10 @@ const sleep = require('util').promisify(setTimeout);
 const multer = require('multer');
 const upload = multer();
 const { v4: uuidv4 } = require('uuid');
+
+const fse = require('fs-extra');
+const csv = require('csv-parser');
+
 const fs = require('fs');
 const path = require('path');
 const cron = require('node-cron');
@@ -17,6 +21,11 @@ const util = require('util');
 const AWS = require('aws-sdk');
 require('dotenv').config();
 const nodemailer = require('nodemailer');
+const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+
+
+const MAX_RETRIES = 3;
+const TIMEOUT = 5000; // in ms
 
 
 
@@ -29,6 +38,47 @@ const sgKey = process.env.SG_KEY;
 sgMail.setApiKey(sgKey);
 console.log(`sgKey = ${sgKey}`)
 const { Configuration, OpenAIApi } = require("openai");
+
+
+
+
+async function trimColumns(fileName) {
+  let results = [];
+  let headers = [];
+  
+  return new Promise((resolve, reject) => {
+      fs.createReadStream(fileName)
+          .pipe(csv())
+          .on('headers', (h) => {
+              headers = h.slice(0, h.indexOf('-')+1);
+          })
+          .on('data', (row) => {
+              let newRow = {};
+              headers.forEach((header) => {
+                  newRow[header] = row[header];
+              });
+              results.push(newRow);
+          })
+          .on('end', async () => {
+              const csvWriter = createCsvWriter({
+                  path: `${path.parse(fileName).name}-temp.csv`,
+                  header: headers.map((header) => ({id: header, title: header})),
+              });
+              
+              await csvWriter.writeRecords(results);
+              
+              // Replace original file with the new one
+              fse.move(`${path.parse(fileName).name}-temp.csv`, fileName, { overwrite: true }, err => {
+                  if (err) {
+                      reject(err);
+                  } else {
+                      resolve('The CSV file was written successfully');
+                  }
+              });
+          });
+  });
+}
+
 
 
 async function getCompanyName(company) {
@@ -68,6 +118,14 @@ async function appendJobToJsonFile(path, newJsonObj) {
 async function runMissedJobs() {
   console.log("TODO: run missed jobs and knock the ones that have either been ran already or ");
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -407,7 +465,38 @@ async function readFileAsListOfLists(filePath) {
 
 
 
-async function req(endpoint, proxy, reqData, page) {
+// async function req(endpoint, proxy, reqData, page) {
+//   reqData.page = page;
+
+//   try {
+//     let res = await axios.get(endpoint, {
+//       params: reqData,
+//       proxy: {
+//         protocol: 'http',
+//         host: proxy[0],
+//         port: proxy[1],
+//         auth: {
+//           username: proxy[2], 
+//           password: proxy[3]  
+//         }
+//       }
+//     });
+//     return res.data;
+//   } catch (error) {
+//     if (error.response && error.response.status === 429) {
+//       console.error('Rate limit exceeded. Stopping further requests...');
+//       return null; // Stop making requests
+//     } else {
+//       console.error(`Error making request to ${endpoint}: ${error}`);
+//       throw error;
+//     }
+//   }
+// }
+
+
+
+
+async function req(endpoint, proxy, reqData, page, retries = MAX_RETRIES) {
   reqData.page = page;
 
   try {
@@ -421,24 +510,24 @@ async function req(endpoint, proxy, reqData, page) {
           username: proxy[2], 
           password: proxy[3]  
         }
-      }
+      },
+      timeout: TIMEOUT
     });
+
     return res.data;
   } catch (error) {
     if (error.response && error.response.status === 429) {
       console.error('Rate limit exceeded. Stopping further requests...');
       return null; // Stop making requests
+    } else if (retries) { // Retry on error or timeout
+      console.log(`Request to ${endpoint} failed, retrying...`);
+      return await req(endpoint, proxy, reqData, page, retries - 1);
     } else {
       console.error(`Error making request to ${endpoint}: ${error}`);
       throw error;
     }
   }
 }
-
-
-// function sleep(ms) {
-//   return new Promise(resolve => setTimeout(resolve, ms));
-// }
 
 
 async function testCredentials(api_key, prxFile) {
@@ -922,7 +1011,7 @@ app.get('/download', async (req, res) => {
   console.log(`Received request with query: ${JSON.stringify(req.query)}`);
   
   let localFilePath = `./output/${fileName}`;
-  await correctHeaders(localFilePath);
+  // await correctHeaders(localFilePath);
   
   if (fs.existsSync(localFilePath)) {  // check if file exists without adding the directory
     console.log(`File found locally: ${fileName}`);
@@ -999,7 +1088,7 @@ async function getLeads(url,api_key, numLeads,email,searchID){
       }
       // console.log(data);
       // console.log(data.people);
-      await sleep(2000);
+      // await sleep(2000);
       const fields = [
         
         // 'industry',
@@ -1027,7 +1116,10 @@ async function getLeads(url,api_key, numLeads,email,searchID){
         'Website',
         'companyLinkedin',
         'id',
-        'formattedCompany'
+        'formattedCompany',
+        "-"
+        
+
 
         // 'intent_strength',
         // 'show_intent',
@@ -1035,8 +1127,11 @@ async function getLeads(url,api_key, numLeads,email,searchID){
       ];  
       // console.log(data.people[0].last_name);
       for (let i = 0; i < data.people.length; i++) {
+        // data.people[i]["-"] = "";
         
+        await sleep(250);
         if (data.people[i].organization) {
+
             data.people[i].organization_Name = data.people[i].organization.name || "N/A";
             data.people[i].Website = data.people[i].organization.website_url || "N/A";
             data.people[i].companyLinkedin = data.people[i].organization.linkedin_url || "N/A";
@@ -1050,8 +1145,11 @@ async function getLeads(url,api_key, numLeads,email,searchID){
         data.people[i].State = data.people[i].state || "N/A";
         data.people[i].City = data.people[i].city || "N/A";
       }
-    
       
+      
+    
+      // const includeHeaders = (i==1);
+
       const opts = { fields };
 
       const startingPage = getValueFromCSV('processing_files/personas.csv',searchID);
@@ -1074,112 +1172,12 @@ async function getLeads(url,api_key, numLeads,email,searchID){
 
 
 async function getLeadsFinal(url,api_key, numLeads,email,searchID){
-  console.log(`Pulling ${numLeads} leads from ${url}`);
-  // console.log(searchID);
-  let proxyList = await readFileAsListOfLists("proxies.txt");
-  // console.log(proxyList);
-  let pages = Math.ceil(numLeads/10);
-  let currProx = Math.floor(Math.random() * proxyList.length);
-  console.log(pages)
-  for (let i = 1; i <= pages; i++) {
-      console.log(`Pulling page ${i} of ${pages}`)
-      if(i % 100 == 0 && i != 0){
-          currProx = Math.floor(Math.random() * proxyList.length);
-          console.log(`Switching proxies to ${proxyList[currProx][0]} | ${i} pages pulled`)
-      }
-      let data = await req('https://api.apollo.io/v1/mixed_people/search?',proxyList[currProx],apolloRequestData(url,api_key,i),i);
-      // console.log(`people: ${data.people}`);
-      if (Object.keys(data.people).length === 0) {
-        console.log(`No more leads`);
-        let fileName = searchID + ".csv";
-        let subject = "Enjoy your free trial leads!";
-        let body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://ApolloPullsAutoScaler-1-1638492219.us-east-2.elb.amazonaws.com/download-page?fileName=${fileName}`;
-        let sender = "worker@icepick.io";
-        let recipient = email;
-        
-        sendEmail(body, subject, recipient);
-        return;
-      }
-      if (data == null) {
-        console.log(`Too many reqs`);
-        return;
-      }
-      // console.log(data);
-      // console.log(data.people);
-      await sleep(2000);
-      const fields = [
-        
-        // 'industry',
-        'first_name',
-        'last_name',
-        'name',
-        'linkedin_url',
-        'title',
-        'email_status',
-        'photo_url',
-        'twitter_url',
-        'github_url',
-        'facebook_url',
-        'extrapolated_email_confidence',
-        'headline',
-        'email',
-        'organization_id',
-        // 'employment_history',
-        'State',
-        'City',
-        'country',
-        // 'organization',
-        // 'phone_numbers',
-        'organization_Name',
-        'Website',
-        'companyLinkedin',
-        'id',
-        'formattedCompany'
-
-        // 'intent_strength',
-        // 'show_intent',
-        // 'revealed_for_current_team'
-      ];  
-      // console.log(data.people[0].last_name);
-      for (let i = 0; i < data.people.length; i++) {
-        
-        if (data.people[i].organization) {
-            data.people[i].organization_Name = data.people[i].organization.name || "N/A";
-            data.people[i].Website = data.people[i].organization.website_url || "N/A";
-            data.people[i].companyLinkedin = data.people[i].organization.linkedin_url || "N/A";
-            data.people[i].formattedCompany= await getCompanyName(data.people[i].organization_Name);
-        } else {
-            data.people[i].organization_Name = "N/A";
-            data.people[i].Website = "N/A";
-            data.people[i].companyLinkedin = "N/A";
-        }
-        
-        data.people[i].State = data.people[i].state || "N/A";
-        data.people[i].City = data.people[i].city || "N/A";
-      }
-      
-
-    
-      
-      const opts = { fields };
-
-      const startingPage = getValueFromCSV('processing_files/personas.csv',searchID);
-      try {
-        let csv = json2csv(data.people, opts);
-        
-
-        fs.appendFileSync(`output/${searchID}.csv`, csv);
-        console.log('File saved successfully!');
-      } catch (err) {
-          console.error(err);
-      }
-      updateCSVFile('processing_files/personas.csv', searchID,startingPage + i);
-
-  }
+  await getLeads(url,api_key, numLeads,email,searchID)
   let fileName = searchID + ".csv";
   subject = "Your Leads are Ready!";
   body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://ApolloPullsAutoScaler-1-1638492219.us-east-2.elb.amazonaws.com/download-page?fileName=${fileName}`;
-  
+  // await deleteColumnsWithNoHeaders(`./output/${searchID}.csv`,`./output/${searchID}_temp.csv`)
+  await trimColumns(`./output/${searchID}.csv`);
   sendEmail(body,subject,email);
   uploadAndClearFile(`./output/${searchID}.csv`);
 
