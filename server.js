@@ -1184,6 +1184,7 @@ async function getLeads(url,api_key, numLeads,email,searchID){
       updateCSVFile('processing_files/personas.csv', searchID,startingPage + i);
 
   }
+  trimColumns(`./output/${searchID}.csv`);
 
 }
 
