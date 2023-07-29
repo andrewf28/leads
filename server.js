@@ -50,7 +50,7 @@ async function trimColumns(fileName) {
       fs.createReadStream(fileName)
           .pipe(csv())
           .on('headers', (h) => {
-              headers = h.slice(0, h.indexOf('formattedCompany')+1);
+              headers = h.slice(0, h.indexOf('-')+1);
           })
           .on('data', (row) => {
               let newRow = {};
