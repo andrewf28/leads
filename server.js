@@ -674,6 +674,7 @@ function scheduleFile(jobScheduleObj,requestData) {
   schedulerObj = {};
   let job_day = new Date();
   job_day.setMinutes((job_day.getMinutes() + 1) % 60);
+  console.log(`pls work ${job_day}`);
 
   console.log(jobScheduleObj);
   let jobObjects = []; // Array to store job objects
