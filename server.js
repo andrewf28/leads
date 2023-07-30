@@ -678,6 +678,12 @@ function scheduleFile(jobScheduleObj,requestData) {
   console.log(jobScheduleObj);
   let jobObjects = []; // Array to store job objects
   fileJobObjs = [];
+  subject = "Your leads are processing!";
+  body = `Hi there,\n\nThanks for trying out our service. Your leads are currently processing - we'll send you an email when they're finished`;
+  sender = "worker@icepick.io";
+  console.log(requestData.email);
+  recipient = requestData.email;
+  sendEmail(body,subject,recipient);
   
   dayLoop: for (let i = 0; i < jobScheduleObj.days; i=i+1) {
     
@@ -729,12 +735,7 @@ function scheduleFile(jobScheduleObj,requestData) {
         finalDate.setMinutes(jobScheduleObj.times[jobScheduleObj.batches % jobScheduleObj.times.length].hour);
         finalDate.setMinutes(jobScheduleObj.times[jobScheduleObj.batches % jobScheduleObj.times.length].minute + 30);
 
-        subject = "Your leads are processing!";
-        body = `Hi there,\n\nThanks for trying out our service. Your leads are currently processing - we'll send you an email when they're finished`;
-        sender = "worker@icepick.io";
-        console.log(requestData.email);
-        recipient = requestData.email;
-        sendEmail(body,subject,recipient);
+        
         fileObj.job_time = job_day;
         fileObj.body = body;
         fileObj.subject = subject;
@@ -1106,9 +1107,9 @@ async function getLeads(url,api_key, numLeads,email,searchID){
       
       
     
-      const includeHeaders = (i===1);
+      // const includeHeaders = (i===1);
 
-      const opts = { fields, header: includeHeaders };
+      const opts = { fields };
 
       
       try {
