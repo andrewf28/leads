@@ -672,7 +672,7 @@ function printReadableDate(date) {
 
 function scheduleFile(jobScheduleObj,requestData) {
   schedulerObj = {};
-  let job_day = jobScheduleObj.now;
+  let job_day = new Date();
   job_day.setMinutes((job_day.getMinutes() + 1) % 60);
 
   console.log(jobScheduleObj);
