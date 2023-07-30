@@ -41,6 +41,22 @@ const { Configuration, OpenAIApi } = require("openai");
 
 
 
+const PULL_MIN = 5;
+const PULL_HOUR = 1;
+const MAX_PULLS_PER_DAY = 2000;
+const REQS_PER_BATCH = 400;
+
+
+
+
+
+
+
+
+
+
+
+
 
 async function trimColumns(fileName) {
   let results = [];
@@ -135,15 +151,6 @@ async function runMissedJobs() {
 }
 
 
-
-
-
-
-
-
-
-
-
 async function uploadAndClearFile(filePath) {
   console.log(filePath);
   const fileExists = fs.existsSync(filePath);
@@ -155,9 +162,6 @@ async function uploadAndClearFile(filePath) {
   await uploadFile(filePath);
   fs.unlinkSync(filePath);
 }
-
-
-
 
 async function addNewKey(BUCKET_NAME,filename,key,value){
   let fileJson = await downloadJSONFromS3(BUCKET_NAME,filename);
@@ -296,6 +300,7 @@ async function uploadJsonToS3(bucketName, key, jsonData) {
 
 
 async function correctHeaders(file){
+  console.log("CHECKING HEADERS");
   await changeCsvHeaders(file, "linkedin_url", "Person Linkedin Url");
   await changeCsvHeaders(file, "first_name", "First Name");
   await changeCsvHeaders(file, "last_name", "Last Name");
@@ -307,10 +312,6 @@ async function correctHeaders(file){
   await changeCsvHeaders(file, "organization_Name", "Company Name");
   await changeCsvHeaders(file, "country", "Country");
 }
-
-
-
-
 
 
 function readJsonFile(path) {
@@ -428,7 +429,7 @@ function getValueFromCSV(filename, key) {
   }
 
   // If the key was not found, return 0
-  return 0;
+  return 1;
 }
 
 function updateCSVFile(filename, key, value) {
@@ -477,36 +478,6 @@ async function readFileAsListOfLists(filePath) {
 
   return listOfLists;
 }
-
-
-
-// async function req(endpoint, proxy, reqData, page) {
-//   reqData.page = page;
-
-//   try {
-//     let res = await axios.get(endpoint, {
-//       params: reqData,
-//       proxy: {
-//         protocol: 'http',
-//         host: proxy[0],
-//         port: proxy[1],
-//         auth: {
-//           username: proxy[2], 
-//           password: proxy[3]  
-//         }
-//       }
-//     });
-//     return res.data;
-//   } catch (error) {
-//     if (error.response && error.response.status === 429) {
-//       console.error('Rate limit exceeded. Stopping further requests...');
-//       return null; // Stop making requests
-//     } else {
-//       console.error(`Error making request to ${endpoint}: ${error}`);
-//       throw error;
-//     }
-//   }
-// }
 
 
 
@@ -669,23 +640,6 @@ function sleep(ms) {
 
 
 
-// function sendEmail(body, subject, recipient, sender) {
-//   const msg = {
-//     to: recipient,
-//     from: sender,
-//     subject: subject,
-//     text: body
-//   };
-
-//   sgMail.send(msg)
-//     .then(() => {
-//       console.log("Email sent");
-//     })
-//     .catch((error) => {
-//       console.error("Error sending email:", error);
-//     });
-// }
-
 async function trialPull(requestData) {
   await getLeads(requestData.url, requestData.api_key, 1000, requestData.email,requestData.searchID);
   
@@ -719,111 +673,94 @@ function printReadableDate(date) {
 function scheduleFile(jobScheduleObj,requestData) {
   schedulerObj = {};
   let job_day = jobScheduleObj.now;
+  job_day.setSeconds(job_day.getSeconds() + 15);
+
   console.log(jobScheduleObj);
   let jobObjects = []; // Array to store job objects
   fileJobObjs = [];
   
-  for (let i = 0; i < jobScheduleObj.days; i++) {
-    while (jobScheduleObj.currJob < jobScheduleObj.batches){
+  dayLoop: for (let i = 0; i < jobScheduleObj.days; i=i+1) {
+    
 
       
-      for(let j = 0; j < jobScheduleObj.times.length; j++){
+    for(let j = 0; j < jobScheduleObj.times.length; j=j+1){
+      
+      job_day.setHours(jobScheduleObj.times[j].hour);
+      job_day.setMinutes((jobScheduleObj.times[j].minute + (5*i)) % 60);
+      let fileObj = {};
+      fileObj.job_time = job_day;
+      fileObj.url =  requestData.url;
+      fileObj.api_key = requestData.api_key;
+      fileObj.email = requestData.email;
+      fileObj.searchID = requestData.searchID;
+      fileObj.type = "pull";
+
+      // console.log(`reqsLeft = ${jobScheduleObj.reqsLeft} and REQS_PER_BATCH = ${REQS_PER_BATCH}}`)
+      // console.log(`running job at ${job_day}`);
+      if (jobScheduleObj.reqsLeft > (REQS_PER_BATCH)){
+        fileObj.numLeads =  REQS_PER_BATCH;
         
         
-        job_day.setHours(jobScheduleObj.times[j].hour);
-        job_day.setMinutes(jobScheduleObj.times[j].minute);
-        job_day.setSeconds(job_day.getSeconds() + 15);
-        let fileObj = {};
-        fileObj.job_time = job_day;
-        fileObj.url =  requestData.url;
-        fileObj.api_key = requestData.api_key;
-        fileObj.email = requestData.email;
-        fileObj.searchID = requestData.searchID;
-        fileObj.type = "pull";
+        const job = schedule.scheduleJob(`job_${jobScheduleObj.currJob}`, job_day, () => getLeads(requestData.url, requestData.api_key, REQS_PER_BATCH * 10, requestData.email,requestData.searchID));
+
+        jobObjects.push({jobName: `job_${jobScheduleObj.currJob}`, job}); // Adding the job to the array
+        console.log(`Pulling ${REQS_PER_BATCH * 10} leads at ${job_day}`)
+        
+      }else{
+        
+
+        let currReqsLeft = jobScheduleObj.reqsLeft;
+        fileObj.numLeads = currReqsLeft*10;
+        const job = schedule.scheduleJob(`job_${jobScheduleObj.currJob}`, job_day, () => getLeadsFinal(requestData.url, requestData.api_key, currReqsLeft*10, requestData.email,requestData.searchID));
+        jobObjects.push({jobName: `job_${jobScheduleObj.currJob}`, job}); // Adding the job to the array
+        console.log(`Pulling ${currReqsLeft * 10} leads at ${job_day}`)
+
+        break dayLoop;
+
+
 
         
-        
-        if (jobScheduleObj.reqsLeft > 400){
-          fileObj.numLeads =  4000;
-          
-          
-          console.log("job scheduled");
-          console.log(`requestData.reqsdLeft = ${jobScheduleObj.reqsLeft}`);
-          const job = schedule.scheduleJob(`job_${jobScheduleObj.currJob}`, job_day, () => getLeads(requestData.url, requestData.api_key, 4000, requestData.email,requestData.searchID));
+      //   console.log(`Full Leads email scheduled for ${job_day}`)
 
-          jobObjects.push({jobName: `job_${jobScheduleObj.currJob}`, job}); // Adding the job to the array
-        }else{
-          
-
-          console.log("job scheduled");
-          let currReqsLeft = jobScheduleObj.reqsLeft;
-          fileObj.numLeads = currReqsLeft*10;
-          const job = schedule.scheduleJob(`job_${jobScheduleObj.currJob}`, job_day, () => getLeadsFinal(requestData.url, requestData.api_key, currReqsLeft*10, requestData.email,requestData.searchID));
-          jobObjects.push({jobName: `job_${jobScheduleObj.currJob}`, job}); // Adding the job to the array
-
-          
-          console.log(`Full Leads email scheduled for ${job_day}`)
-
-        }
-        fileJobObjs.push(fileObj);
-        if (jobScheduleObj.currJob == 0){
-          let finalDate = new Date(job_day);
-          finalDate.setMinutes(jobScheduleObj.times[jobScheduleObj.batches % 5].hour);
-          finalDate.setMinutes(jobScheduleObj.times[jobScheduleObj.batches % 5].minute + 30);
-
-          subject = "Your leads are processing!";
-          body = `Hi there,\n\nThanks for trying out our service. Your leads are currently processing - we'll send you an email when they're finished`;
-          sender = "worker@icepick.io";
-          console.log(requestData.email);
-          recipient = requestData.email;
-          sendEmail(body,subject,recipient);
-          fileObj.job_time = job_day;
-          fileObj.body = body;
-          fileObj.subject = subject;
-          fileObj.sender = sender;
-          fileObj.recipient = recipient;
-
-          
-          fileObj.type = "email";
-          fileJobObjs.push({jobName: `finalEmail`, fileObj});
-          // console.log("TODO: send email to user that leads are processing with html that leads them to icepick.io include the time they'll finish")
-        }
-        
-        
-        
-        printReadableDate(job_day);
-        jobScheduleObj.currJob++;
-        jobScheduleObj.reqsLeft -=400;
-        jobScheduleObj.times[j].minute+=5;
-
-        if (jobScheduleObj.reqsLeft < 1){
-          jobObjects.forEach(jobObject => {
-            if(schedule.scheduledJobs[jobObject.jobName]) {
-                console.log(`Job ${jobObject.jobName} is scheduled and will run at the scheduled time.`);
-            } else {
-                console.log(`Job ${jobObject.jobName} is not scheduled.`);
-            }
-        });
-          
-          let data = JSON.stringify(fileJobObjs, null, 2);
-          fs.writeFile("schedule.json", data, (err) => {
-              if (err) throw err;
-              console.log('Data written to file');
-          });
-        
-          return jobObjects; // Return the array of job objects
-        }
       }
-      job_day.setDate(job_day.getDate() + 1);
+      fileJobObjs.push(fileObj);
+      if (jobScheduleObj.currJob == 0){
+        let finalDate = new Date(job_day);
+        finalDate.setMinutes(jobScheduleObj.times[jobScheduleObj.batches % jobScheduleObj.times.length].hour);
+        finalDate.setMinutes(jobScheduleObj.times[jobScheduleObj.batches % jobScheduleObj.times.length].minute + 30);
+
+        subject = "Your leads are processing!";
+        body = `Hi there,\n\nThanks for trying out our service. Your leads are currently processing - we'll send you an email when they're finished`;
+        sender = "worker@icepick.io";
+        console.log(requestData.email);
+        recipient = requestData.email;
+        sendEmail(body,subject,recipient);
+        fileObj.job_time = job_day;
+        fileObj.body = body;
+        fileObj.subject = subject;
+        fileObj.sender = sender;
+        fileObj.recipient = recipient;
+
+        
+        fileObj.type = "email";
+        fileJobObjs.push({jobName: `finalEmail`, fileObj});
+        // console.log("TODO: send email to user that leads are processing with html that leads them to icepick.io include the time they'll finish")
+      }
+      
+      
+      
+      // printReadableDate(job_day);
+      jobScheduleObj.currJob++;
+      jobScheduleObj.reqsLeft -= (REQS_PER_BATCH);
+
+      
     }
+    job_day.setDate(job_day.getDate() + 1);
+  
+
+    
   }
-  jobObjects.forEach(jobObject => {
-    if(schedule.scheduledJobs[jobObject.jobName]) {
-        console.log(`Job ${jobObject.jobName} is scheduled and will run at the scheduled time.`);
-    } else {
-        console.log(`Job ${jobObject.jobName} is not scheduled.`);
-    }
-  });
+  
   let data = JSON.stringify(fileJobObjs, null, 2);
   appendToJsonFile("schedule.json",fileJobObjs);
 
@@ -870,29 +807,30 @@ function jobScheduleObj(numLeads){
   let hours = now.getHours();
   let minutes = now.getMinutes();
   // console.log(`Current time is: ${hours}:${minutes}`);
-  const days = Math.ceil(requests / 2000);
+  const days = Math.ceil(requests / MAX_PULLS_PER_DAY);
   const currentDay = getDayOfYear();
   // console.log(currentDay);
   let finalDay = currentDay + days;
-  let batches = Math.ceil(requests / 400)
-  let lastDayBatches = batches % 5;
+  let batches = Math.ceil(requests / (REQS_PER_BATCH/10))
+  let lastDayBatches = batches % MAX_PULLS_PER_DAY;
   if (lastDayBatches == 0){
-    lastDayBatches = 5;
+    lastDayBatches = MAX_PULLS_PER_DAY;
   }
   scheduler.days = days;
   scheduler.batches = batches;
   scheduler.lastDayBatches = lastDayBatches;
   scheduler.times = [];
-  scheduler.reqsLeft = requests;
+  scheduler.reqsLeft = requests; // Correct
   scheduler.now = now;
 
 
   console.log(`DAYS:${days} | BATCHES:${batches} | LAST_DAY: ${lastDayBatches}`);
-  for (let i = 0; i < 5;i++){
-    let batchHour = (hours + i) % 24;
-    let batchMinute = (minutes) % 60;
-    // hours++;
-    minutes+=5;
+  for (let i = 0; i < (MAX_PULLS_PER_DAY / REQS_PER_BATCH);i++){
+    let batchHour = (hours);
+    let batchMinute = (minutes);
+    hours = (PULL_HOUR + hours) % 24;
+    minutes = (PULL_MIN + minutes) % 60;
+    if ((minutes == 0) && (i != 0)) hours = (hours + 1) % 24;
     let batchTime = {};
     batchTime.hour = batchHour;
     batchTime.minute = batchMinute;
@@ -915,13 +853,6 @@ function generateUniqueID() {
   const timestamp = new Date().getTime();
   return timestamp.toString();
 }
-// var transporter = nodemailer.createTransport({
-//   service: 'gmail',
-//   auth: {
-//           user: process.env.WORKER_ID,
-//           pass: process.env.WORKER_PASS
-//       }
-//   });
 
 function sendText(subject,text) {
   
@@ -1030,7 +961,8 @@ app.get('/download', async (req, res) => {
   console.log(`Received request with query: ${JSON.stringify(req.query)}`);
   
   let localFilePath = `./output/${fileName}`;
-  // await correctHeaders(localFilePath);
+  // uploadAndClearFile(localFilePath);
+  await correctHeaders(localFilePath);
   
   if (fs.existsSync(localFilePath)) {  // check if file exists without adding the directory
     console.log(`File found locally: ${fileName}`);
@@ -1076,13 +1008,19 @@ app.get('/download-page', (req, res) => {
 
 async function getLeads(url,api_key, numLeads,email,searchID){
   console.log(`Pulling ${numLeads} leads from ${url}`);
+  const startingPage = getValueFromCSV('processing_files/personas.csv',searchID);
+  console.log(`Starting page: ${startingPage}`);
   // console.log(searchID);
   let proxyList = await readFileAsListOfLists("proxies.txt");
   // console.log(proxyList);
-  let pages = Math.ceil(numLeads/10);
+  let firstRun = (startingPage == 1);
+  let pages = Math.ceil(numLeads/10) + startingPage - firstRun;
   let currProx = Math.floor(Math.random() * proxyList.length);
+  
+
   console.log(pages)
-  for (let i = 1; i <= pages; i++) {
+  
+  for (let i = startingPage + !firstRun; i <= pages; i++) {
       console.log(`Pulling page ${i} of ${pages}`)
       if(i % 100 == 0 && i != 0){
           currProx = Math.floor(Math.random() * proxyList.length);
@@ -1107,7 +1045,7 @@ async function getLeads(url,api_key, numLeads,email,searchID){
       }
       // console.log(data);
       // console.log(data.people);
-      // await sleep(2000);
+      await sleep(3000);
       const fields = [
         
         // 'industry',
@@ -1146,9 +1084,9 @@ async function getLeads(url,api_key, numLeads,email,searchID){
       ];  
       // console.log(data.people[0].last_name);
       for (let i = 0; i < data.people.length; i++) {
-        // data.people[i]["-"] = "";
+        data.people[i]["-"] = "";
         
-        await sleep(250);
+        // await sleep(250);
         if (data.people[i].organization) {
 
             data.people[i].organization_Name = data.people[i].organization.name || "N/A";
@@ -1164,14 +1102,15 @@ async function getLeads(url,api_key, numLeads,email,searchID){
         data.people[i].State = data.people[i].state || "N/A";
         data.people[i].City = data.people[i].city || "N/A";
       }
+
       
       
     
-      // const includeHeaders = (i==1);
+      const includeHeaders = (i===1);
 
-      const opts = { fields };
+      const opts = { fields, header: includeHeaders };
 
-      const startingPage = getValueFromCSV('processing_files/personas.csv',searchID);
+      
       try {
         let csv = json2csv(data.people, opts);
         
@@ -1181,10 +1120,10 @@ async function getLeads(url,api_key, numLeads,email,searchID){
       } catch (err) {
           console.error(err);
       }
-      updateCSVFile('processing_files/personas.csv', searchID,startingPage + i);
+      updateCSVFile('processing_files/personas.csv', searchID,i);
 
   }
-  trimColumns(`./output/${searchID}.csv`);
+  await trimColumns(`./output/${searchID}.csv`);
 
 }
 
@@ -1198,6 +1137,7 @@ async function getLeadsFinal(url,api_key, numLeads,email,searchID){
   body = `Hi there,\n\nThanks for trying out our service. Here are your leads brev!\n\nhttp://ApolloPullsAutoScaler-1-1638492219.us-east-2.elb.amazonaws.com/download-page?fileName=${fileName}`;
   // await deleteColumnsWithNoHeaders(`./output/${searchID}.csv`,`./output/${searchID}_temp.csv`)
   await trimColumns(`./output/${searchID}.csv`);
+  await correctHeaders(`./output/${searchID}.csv`);
   sendEmail(body,subject,email);
   uploadAndClearFile(`./output/${searchID}.csv`);
 
