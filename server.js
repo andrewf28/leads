@@ -920,7 +920,8 @@ app.post('/process',upload.none(),async (req, res) => {
   console.log(`URL: ${url} | NUM-LEADS:${numLeads} | API-KEY:${api_key} | EMAIL:${email} | SERVKEY:${server_key}`);
   numLeads = Math.ceil(numLeads / 10) * 10;
   searchID = replaceSpecialChars(searchID);
-  console.log(`search id ${searchID}`);
+  api_key = api_key.replace(/\s+/g,'');
+
 
   
   let invoicePaid;
