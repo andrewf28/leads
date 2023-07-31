@@ -50,7 +50,17 @@ const REQS_PER_BATCH = 400;
 
 
 
+function replaceSpecialChars(str) {
+  var specialChars = ['#', '?', '&', '=', '/', '%', '+', ':',' '];
+  var newStr = str;
 
+  specialChars.forEach(function(char) {
+      var regex = new RegExp('\\' + char, 'g');
+      newStr = newStr.replace(regex, '-');
+  });
+
+  return newStr;
+}
 
 
 
@@ -909,7 +919,9 @@ app.post('/process',upload.none(),async (req, res) => {
   let { url,numLeads, api_key,email,server_key,searchID } = req.body;
   console.log(`URL: ${url} | NUM-LEADS:${numLeads} | API-KEY:${api_key} | EMAIL:${email} | SERVKEY:${server_key}`);
   numLeads = Math.ceil(numLeads / 10) * 10;
-  searchID = encodeURIComponent(searchID);
+  searchID = replaceSpecialChars(searchID);
+  console.log(`search id ${searchID}`);
+
   
   let invoicePaid;
   // sendText("New Request",`User ${email} running a search for ${numLeads} Leads`)
