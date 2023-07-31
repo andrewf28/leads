@@ -1116,23 +1116,23 @@ async function getLeads(url,api_key, numLeads,email,searchID){
         // await sleep(250);
         if (data.people[i].organization) {
 
-            data.people[i].organization_Name = data.people[i].organization.name || " ";
-            data.people[i].Website = data.people[i].organization.website_url || " ";
-            data.people[i].companyLinkedin = data.people[i].organization.linkedin_url || " ";
+            data.people[i].organization_Name = data.people[i].organization.name ;
+            data.people[i].Website = data.people[i].organization.website_url ;
+            data.people[i].companyLinkedin = data.people[i].organization.linkedin_url ;
             let orgData = await getOrganizationData(data.people[i].organization.id,api_key);
-            data.people[i].CompanyState = orgData.state || " ";
-            data.people[i].CompanyCity = orgData.city || " ";
-            data.people[i].SeoDescription = orgData.seo_description || " ";
+            data.people[i].CompanyState = orgData.state ;
+            data.people[i].CompanyCity = orgData.city ;
+            data.people[i].SeoDescription = orgData.seo_description ;
             
 
         } else {
-            data.people[i].organization_Name = " ";
-            data.people[i].Website = " ";
-            data.people[i].companyLinkedin = " ";
+            data.people[i].organization_Name;
+            data.people[i].Website;
+            data.people[i].companyLinkedin;
         }
         
-        data.people[i].State = data.people[i].state || " ";
-        data.people[i].City = data.people[i].city || " ";
+        data.people[i].State = data.people[i].state ;
+        data.people[i].City = data.people[i].city ;
       }
 
       
