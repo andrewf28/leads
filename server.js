@@ -672,8 +672,8 @@ function printReadableDate(date) {
 
 function scheduleFile(jobScheduleObj,requestData) {
   schedulerObj = {};
-  let job_day = new Date();
-  job_day.setMinutes((job_day.getMinutes() + 1) % 60);
+  let job_day = jobScheduleObj.now;
+  // job_day.setMinutes((job_day.getMinutes() + 1) % 60);
   console.log(`pls work ${job_day}`);
 
   console.log(jobScheduleObj);
@@ -805,7 +805,9 @@ function jobScheduleObj(numLeads){
   scheduler = {};
   scheduler.currJob = 0;
   let requests = numLeads/10;
-  const now = new Date();
+  let now = new Date();
+  now.setMinutes(now.getMinutes() + 1);
+  
   let hours = now.getHours();
   let minutes = now.getMinutes();
   // console.log(`Current time is: ${hours}:${minutes}`);
