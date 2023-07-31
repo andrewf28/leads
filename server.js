@@ -66,7 +66,7 @@ async function trimColumns(fileName) {
       fs.createReadStream(fileName)
           .pipe(csv())
           .on('headers', (h) => {
-              headers = h.slice(0, h.indexOf('-')+1);
+              headers = h.slice(0, h.indexOf('SeoDescription')+1);
           })
           .on('data', (row) => {
               let newRow = {};
@@ -170,6 +170,25 @@ async function addNewKey(BUCKET_NAME,filename,key,value){
   uploadJsonToS3(BUCKET_NAME, filename, fileJson);
 
 }
+
+async function getOrganizationData(orgId,key){
+  try {
+    const response = await axios.get(`https://api.apollo.io/v1/organizations/${orgId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      params: {
+        api_key: key
+      }
+    });
+
+    // console.log(response.data);
+    return response.data.organization;
+  } catch (error) {
+    console.error(error);
+  }
+};
 
 
 function downloadFromS3(fileName, res) {
@@ -890,6 +909,7 @@ app.post('/process',upload.none(),async (req, res) => {
   let { url,numLeads, api_key,email,server_key,searchID } = req.body;
   console.log(`URL: ${url} | NUM-LEADS:${numLeads} | API-KEY:${api_key} | EMAIL:${email} | SERVKEY:${server_key}`);
   numLeads = Math.ceil(numLeads / 10) * 10;
+  searchID = encodeURIComponent(searchID);
   
   let invoicePaid;
   // sendText("New Request",`User ${email} running a search for ${numLeads} Leads`)
@@ -1077,6 +1097,9 @@ async function getLeads(url,api_key, numLeads,email,searchID){
         'Website',
         'companyLinkedin',
         'id',
+        'CompanyState',
+        'CompanyCity',
+        'SeoDescription',
         // 'formattedCompany',
         "-"
         
@@ -1093,18 +1116,23 @@ async function getLeads(url,api_key, numLeads,email,searchID){
         // await sleep(250);
         if (data.people[i].organization) {
 
-            data.people[i].organization_Name = data.people[i].organization.name || "N/A";
-            data.people[i].Website = data.people[i].organization.website_url || "N/A";
-            data.people[i].companyLinkedin = data.people[i].organization.linkedin_url || "N/A";
-            // data.people[i].formattedCompany= await getCompanyName(data.people[i].organization_Name);
+            data.people[i].organization_Name = data.people[i].organization.name || " ";
+            data.people[i].Website = data.people[i].organization.website_url || " ";
+            data.people[i].companyLinkedin = data.people[i].organization.linkedin_url || " ";
+            let orgData = await getOrganizationData(data.people[i].organization.id,api_key);
+            data.people[i].CompanyState = orgData.state || " ";
+            data.people[i].CompanyCity = orgData.city || " ";
+            data.people[i].SeoDescription = orgData.seo_description || " ";
+            
+
         } else {
-            data.people[i].organization_Name = "N/A";
-            data.people[i].Website = "N/A";
-            data.people[i].companyLinkedin = "N/A";
+            data.people[i].organization_Name = " ";
+            data.people[i].Website = " ";
+            data.people[i].companyLinkedin = " ";
         }
         
-        data.people[i].State = data.people[i].state || "N/A";
-        data.people[i].City = data.people[i].city || "N/A";
+        data.people[i].State = data.people[i].state || " ";
+        data.people[i].City = data.people[i].city || " ";
       }
 
       
