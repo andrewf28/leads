@@ -941,7 +941,7 @@ app.post('/', (req, res) => {
 app.post('/process',upload.none(),async (req, res) => {
   let { url,numLeads, api_key,email,server_key,searchID } = req.body;
   
-  console.log(`URL: ${url} | EMAIL: ${email} | SEARCHID: ${searchID} | KEY: ${key} | LEADSCHOICE: ${leadsChoice}`);
+  console.log(`URL: ${url} | EMAIL: ${email} | SEARCHID: ${searchID} | KEY: ${api_key} | LEADSCHOICE: ${leadsChoice}`);
   
   console.log(`URL: ${url} | NUM-LEADS:${numLeads} | API-KEY:${api_key} | EMAIL:${email} | SERVKEY:${server_key}`);
   numLeads = Math.ceil(numLeads / 10) * 10;
