@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const { spawn } = require('child_process');
 const { exec } = require('child_process');
-// const sleep = require('util').promisify(setTimeout);
+var bodyParser = require('body-parser')
 const multer = require('multer');
 const upload = multer();
 const { v4: uuidv4 } = require('uuid');
@@ -26,6 +26,8 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
 const MAX_RETRIES = 3;
 const TIMEOUT = 5000; // in ms
+
+
 
 
 
@@ -904,9 +906,29 @@ function sendText(subject,text) {
       console.log(info);
   });
 }
+app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
   res.send('Hello, world!');
+  // console.log(req.headers);
+  // console.log("Req made to serv")
+});
+
+app.post('/', (req, res) => {
+  // res.send('Hello, world!');
+  let body = req.body;
+  // console.log(body.title);
+  const answers = req.body.form_response.answers
+  console.log(answers);
+  const email = answers[2].email;
+  const url = answers[4].text;
+  const searchID = answers[5].text;
+  const key = answers[6].text;
+  const leadsChoice = answers[7].choice.label.split(" ")[0].replace(",","");
+  console.log(`URL: ${url} | EMAIL: ${email} | SEARCHID: ${searchID} | KEY: ${key} | LEADSCHOICE: ${leadsChoice}`);
+  
+
+  res.send("OK");
   // console.log("Req made to serv")
 });
 
@@ -915,8 +937,12 @@ app.get('/', (req, res) => {
 
 
 
+
 app.post('/process',upload.none(),async (req, res) => {
   let { url,numLeads, api_key,email,server_key,searchID } = req.body;
+  
+  console.log(`URL: ${url} | EMAIL: ${email} | SEARCHID: ${searchID} | KEY: ${key} | LEADSCHOICE: ${leadsChoice}`);
+  
   console.log(`URL: ${url} | NUM-LEADS:${numLeads} | API-KEY:${api_key} | EMAIL:${email} | SERVKEY:${server_key}`);
   numLeads = Math.ceil(numLeads / 10) * 10;
   searchID = replaceSpecialChars(searchID);
@@ -985,6 +1011,75 @@ app.post('/process',upload.none(),async (req, res) => {
 
  
 });
+
+
+
+
+app.post('/processtf',upload.none(),async (req, res) => {
+  // let { url,numLeads, api_key,email,server_key,searchID } = req.body;
+  const answers = req.body.form_response.answers
+  console.log(answers);
+  let email = answers[2].email;
+  let url = answers[3].text;
+  let api_key = answers[4].text;
+  let searchID = answers[5].text;
+  let numLeads = answers[6].choice.label.split(" ")[0].replace(",","");
+  // numLeads = numLeads /100;
+  // const numLeads = answers[7].choice.label.split(" ")[0].replace(",","");
+
+  console.log(`URL: ${url} | NUM-LEADS:${numLeads} | API-KEY:${api_key} | EMAIL:${email}`);
+  numLeads = Math.ceil(numLeads / 10) * 10;
+  searchID = replaceSpecialChars(searchID);
+  api_key = api_key.replace(/\s+/g,'');
+
+
+  
+  let invoicePaid;
+  // sendText("New Request",`User ${email} running a search for ${numLeads} Leads`)
+  sendEmail(`User ${email} running a search for ${numLeads} Leads | URL = ${url} | searchID = ${searchID}`,"NEW REQUEST ON LEADPULL","andrew@icepick.io");
+  // sendEmail(`User ${email} running a search for ${numLeads} Leads`,"NEW REQUEST ON LEADPULL","ryeem@icepick.io");
+
+  
+  
+  
+
+  let validCreds = await testCredentials(api_key,"proxies.txt")
+  
+  if (validCreds == 401 ){
+    res.status(401).send({text: `Invalid Credentials`});
+    sendEmail(`Your API KEY was not valid. Please Contact Support`,"INVALID API KEY",email);
+    return;
+  }else if (validCreds > 250){
+    res.status(401).send({text: `No clue what happened`}); 
+    return;
+  }
+  
+
+  
+  let server_key = "";
+  
+  let reqID = uuidv4();
+  let reqObj = {};
+  reqObj.url = url;
+  reqObj.numLeads = numLeads;
+  reqObj.api_key = api_key;
+  reqObj.email = email;
+  reqObj.server_key = server_key;
+  reqObj.searchID = reqID+"-"+searchID;
+  // console.log(`numLeads: ${numLeads} | invoicePaid: ${invoicePaid}`)
+  
+  console.log(reqObj.searchId);
+  
+
+  let schedulerObj = jobScheduleObj(numLeads);
+  scheduleFile(schedulerObj,reqObj);
+  res.status(200).send({text: `Processing request with ID: ${reqID} | Filename: ${reqObj.searchID}.csv`});
+  
+
+ 
+});
+
+
 
 
 
@@ -1132,10 +1227,10 @@ async function getLeads(url,api_key, numLeads,email,searchID){
             data.people[i].organization_Name = data.people[i].organization.name ;
             data.people[i].Website = data.people[i].organization.website_url ;
             data.people[i].companyLinkedin = data.people[i].organization.linkedin_url ;
-            let orgData = await getOrganizationData(data.people[i].organization.id,api_key);
-            data.people[i].CompanyState = orgData.state ;
-            data.people[i].CompanyCity = orgData.city ;
-            data.people[i].SeoDescription = orgData.seo_description ;
+            // let orgData = await getOrganizationData(data.people[i].organization.id,api_key);
+            // data.people[i].CompanyState = orgData.state || "";
+            // data.people[i].CompanyCity = orgData.city || "";
+            // data.people[i].SeoDescription = orgData.seo_description || "";
             
 
         } else {
